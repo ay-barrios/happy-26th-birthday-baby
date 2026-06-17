@@ -1,6 +1,6 @@
 (function(){
   /* =================================================================== */
-  /* =========================  GAME SETTINGS  ========================= */
+  /* ========================  GAME SETTINGS  ========================== */
   /* =================================================================== */
   var GAME = {
     walkSpeed:   11,             // how fast Tommy moves
@@ -104,7 +104,7 @@
   function initGame(){
     var canvas=document.getElementById('game-canvas');
     var renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, isTouch?1.5:2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
 
     var scene=new THREE.Scene();
     // cool, cheerful sky so the warm/rose gift light stands out
@@ -126,8 +126,8 @@
 
     var m=new THREE.Matrix4(), q=new THREE.Quaternion(), v=new THREE.Vector3(), s=new THREE.Vector3(1,1,1);
 
-    // ---- ground: alternating blocky grass tiles (sized to the field) ----
-    var TILE=2, GN=Math.ceil(GAME.fieldHalf/TILE);
+    // ---- ground: alternating blocky grass tiles ----
+    var GN=Math.ceil(GAME.fieldHalf), TILE=2;
     var tileGeo=new THREE.BoxGeometry(TILE,1,TILE);
     var nTiles=(GN*2)*(GN*2);
     var imL=new THREE.InstancedMesh(tileGeo,new THREE.MeshLambertMaterial({color:0x84c95a}),nTiles);
@@ -172,10 +172,10 @@
     }
     var placed=0,tries=0;
     while(placed<13 && tries<300){ tries++;
-      var tx2=(Math.random()*2-1)*(GAME.fieldHalf-3), tz2=(Math.random()*2-1)*(GAME.fieldHalf-3);
-      if(Math.abs(tx2)<6 && tz2>0) continue;
-      if(Math.hypot(tx2-GAME.giftPos.x,tz2-GAME.giftPos.z)<7) continue;
-      tree(tx2,tz2); placed++;
+      var tx=(Math.random()*2-1)*(GAME.fieldHalf-3), tz=(Math.random()*2-1)*(GAME.fieldHalf-3);
+      if(Math.abs(tx)<6 && tz>0) continue;
+      if(Math.hypot(tx-GAME.giftPos.x,tz-GAME.giftPos.z)<7) continue;
+      tree(tx,tz); placed++;
     }
 
     // ---- pond + little fence ----
@@ -197,17 +197,18 @@
     }
     cloud(-28,-14); cloud(14,-30); cloud(32,6); cloud(-20,22); cloud(4,32); cloud(-36,-4); cloud(24,-10); cloud(-8,30);
 
-    // ---- the glowing gift (bigger + always luminous) + beam + ground halo ----
+    // ---- the glowing gift (rose light, always luminous) + beam + ground halo ----
     var gift=new THREE.Group();
-    var giftBox=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), new THREE.MeshLambertMaterial({color:0xff8fb0, emissive:0xff4d80, emissiveIntensity:0.8}));
+    var giftBox=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), new THREE.MeshLambertMaterial({color:0xff8fb0, emissive:0xff3d77, emissiveIntensity:0.8}));
     giftBox.position.y=0.8; gift.add(giftBox);
     var ribMat=new THREE.MeshLambertMaterial({color:0xfff0a0, emissive:0xffcf55, emissiveIntensity:0.6});
     var r1=new THREE.Mesh(new THREE.BoxGeometry(0.32,1.7,1.7),ribMat); r1.position.y=0.8; gift.add(r1);
     var r2=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.7,0.32),ribMat); r2.position.y=0.8; gift.add(r2);
     var bow=new THREE.Mesh(new THREE.BoxGeometry(0.75,0.5,0.75),ribMat); bow.position.y=1.85; gift.add(bow);
-    var beacon=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.0,34,14,1,true), new THREE.MeshBasicMaterial({color:0xfff0b0, transparent:true, opacity:0.3, side:THREE.DoubleSide, depthWrite:false}));
-    beacon.position.y=17; gift.add(beacon);
-    var glow=new THREE.PointLight(0xffd58a,2.2,28); glow.position.y=2; gift.add(glow);
+    // rose beam of light (clearly visible against the cool sky)
+    var beacon=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,36,16,1,true), new THREE.MeshBasicMaterial({color:0xff5fa0, transparent:true, opacity:0.45, side:THREE.DoubleSide, depthWrite:false}));
+    beacon.position.y=18; gift.add(beacon);
+    var glow=new THREE.PointLight(0xff9ec4,2.4,30); glow.position.y=2; gift.add(glow);
     // a ring of sparkle-dots that orbit the gift (always on)
     var orbitGroup=new THREE.Group(); gift.add(orbitGroup);
     var dots=[];
@@ -219,7 +220,7 @@
     gift.scale.setScalar(GAME.giftScale);
     gift.position.set(GAME.giftPos.x,0,GAME.giftPos.z); scene.add(gift);
 
-    var halo=new THREE.Mesh(new THREE.CircleGeometry(5,30), new THREE.MeshBasicMaterial({color:0xffe39a, transparent:true, opacity:0.4, side:THREE.DoubleSide, depthWrite:false}));
+    var halo=new THREE.Mesh(new THREE.CircleGeometry(5,30), new THREE.MeshBasicMaterial({color:0xff7fb0, transparent:true, opacity:0.4, side:THREE.DoubleSide, depthWrite:false}));
     halo.rotation.x=-Math.PI/2; halo.position.set(GAME.giftPos.x,0.05,GAME.giftPos.z); scene.add(halo);
 
     // ---- Tommy (blocky capybara, built facing +Z) ----
@@ -244,12 +245,7 @@
     tommy.scale.setScalar(GAME.tommyScale);
     tommy.position.set(0,0,12); tommy.rotation.y=Math.PI; scene.add(tommy);
 
-    /* ---------- CAMERA (orbit + zoom) ---------- */
-    var CAM_DIST=17, CAM_HEIGHT=13, ZMIN=0.55, ZMAX=2.4;
-    var camYaw=0, zoom=1;
-    camera.position.set(0, CAM_HEIGHT, 12+CAM_DIST); camera.lookAt(0,1.8,12);
-
-    // ---- walking controls (joystick) ----
+    // ---- controls ----
     var keys={};
     window.addEventListener('keydown',function(e){ keys[e.key.toLowerCase()]=true; if(['arrowup','arrowdown','arrowleft','arrowright'].indexOf(e.key.toLowerCase())>=0 && visible) e.preventDefault(); },{passive:false});
     window.addEventListener('keyup',function(e){ keys[e.key.toLowerCase()]=false; });
@@ -264,30 +260,6 @@
     joy.addEventListener('pointermove',joyMove);
     joy.addEventListener('pointerup',joyEnd);
     joy.addEventListener('pointercancel',joyEnd);
-
-    // ---- look-around (drag) + zoom (pinch) on the field ----
-    var ptrs={}, pinchPrev=null;
-    canvas.addEventListener('pointerdown',function(e){ ptrs[e.pointerId]={x:e.clientX,y:e.clientY}; });
-    canvas.addEventListener('pointermove',function(e){
-      if(!(e.pointerId in ptrs)) return;
-      var ids=Object.keys(ptrs);
-      if(ids.length>=2){                       // two fingers -> pinch zoom
-        ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
-        var a=ptrs[ids[0]], b=ptrs[ids[1]];
-        var dist=Math.hypot(a.x-b.x,a.y-b.y);
-        if(pinchPrev!==null && dist>0){ zoom*=pinchPrev/dist; zoom=Math.max(ZMIN,Math.min(ZMAX,zoom)); }
-        pinchPrev=dist;
-      } else {                                  // one finger -> orbit
-        var pp=ptrs[e.pointerId];
-        camYaw -= (e.clientX-pp.x)*0.005;
-        ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
-        pinchPrev=null;
-      }
-    });
-    function endPtr(e){ delete ptrs[e.pointerId]; if(Object.keys(ptrs).length<2) pinchPrev=null; }
-    canvas.addEventListener('pointerup',endPtr);
-    canvas.addEventListener('pointercancel',endPtr);
-    canvas.addEventListener('pointerleave',endPtr);
 
     var hint=document.getElementById('gameHint');
     setTimeout(function(){ hint.classList.add('fade'); }, 7000);
@@ -316,7 +288,6 @@
       requestAnimationFrame(loop);
       if(!visible){ return; }
 
-      // raw input
       var mx=0, mz=0;
       if(joyActive && (Math.abs(joyX)>0.08 || Math.abs(joyY)>0.08)){ mx=joyX; mz=joyY; }
       else {
@@ -326,21 +297,15 @@
         if(keys['arrowright']||keys['d']) mx+=1;
       }
       var len=Math.hypot(mx,mz); if(len>1){ mx/=len; mz/=len; }
-
-      // make input camera-relative: "up" walks away from the camera
-      var fdx=-Math.sin(camYaw), fdz=-Math.cos(camYaw);   // forward (into the screen)
-      var rdx=-fdz, rdz=fdx;                              // right
-      var wmX=rdx*mx + fdx*(-mz);
-      var wmZ=rdz*mx + fdz*(-mz);
-      var moving=(wmX*wmX+wmZ*wmZ)>0.01;
+      var moving=(mx*mx+mz*mz)>0.01;
 
       if(moving){
-        tommy.position.x+=wmX*GAME.walkSpeed*dt;
-        tommy.position.z+=wmZ*GAME.walkSpeed*dt;
-        var bnd=GAME.fieldHalf-1.5;
-        tommy.position.x=Math.max(-bnd,Math.min(bnd,tommy.position.x));
-        tommy.position.z=Math.max(-bnd,Math.min(bnd,tommy.position.z));
-        tommy.rotation.y=lerpAngle(tommy.rotation.y, Math.atan2(wmX,wmZ), 0.2);
+        tommy.position.x+=mx*GAME.walkSpeed*dt;
+        tommy.position.z+=mz*GAME.walkSpeed*dt;
+        var b=GAME.fieldHalf-1.5;
+        tommy.position.x=Math.max(-b,Math.min(b,tommy.position.x));
+        tommy.position.z=Math.max(-b,Math.min(b,tommy.position.z));
+        tommy.rotation.y=lerpAngle(tommy.rotation.y, Math.atan2(mx,mz), 0.2);
         walk+=dt*11;
         legs[0].rotation.x=Math.sin(walk)*0.5; legs[3].rotation.x=Math.sin(walk)*0.5;
         legs[1].rotation.x=-Math.sin(walk)*0.5; legs[2].rotation.x=-Math.sin(walk)*0.5;
@@ -350,14 +315,10 @@
         rig.position.y += (0 - rig.position.y)*0.1;
       }
 
-      // camera orbits + zooms around Tommy
       var tx=tommy.position.x, tz=tommy.position.z;
-      var desX=tx + Math.sin(camYaw)*CAM_DIST*zoom;
-      var desZ=tz + Math.cos(camYaw)*CAM_DIST*zoom;
-      var desY=Math.max(4, CAM_HEIGHT*zoom);
-      camera.position.x += (desX-camera.position.x)*0.12;
-      camera.position.y += (desY-camera.position.y)*0.12;
-      camera.position.z += (desZ-camera.position.z)*0.12;
+      camera.position.x += (tx - camera.position.x)*0.09;
+      camera.position.z += (tz+17 - camera.position.z)*0.09;
+      camera.position.y += (13 - camera.position.y)*0.09;
       camera.lookAt(tx, 1.8, tz);
 
       // gift glow: bob, spin, orbiting dots, pulsing halo (always on)
@@ -386,11 +347,7 @@
     }
 
     sizeR();
-    requestAnimationFrame(sizeR);                 // re-measure once layout settles
-    setTimeout(sizeR, 350);                        // re-measure after mobile browser bars settle
     window.addEventListener('resize',sizeR);
-    window.addEventListener('orientationchange',function(){ setTimeout(sizeR,200); });
-    if('ResizeObserver' in window){ new ResizeObserver(sizeR).observe(canvas); }
     requestAnimationFrame(loop);
   }
 })();
