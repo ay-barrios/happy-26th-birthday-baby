@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Happy Birthday, Baby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ HERO / GALAXY ============ -->
+<div class="galaxy-wrap">
+  <div class="galaxy" id="galaxy">
+    <div class="milkyway"></div>
+    <div class="stars" id="stars"></div>
+    <div class="solar" id="solar"></div>
+    <div class="hero-text" id="heroText">
+      <p class="eyebrow">26 revolutions around the sun</p>
+      <h1>Happy Birthday,<br><em>Baby</em></h1>
+      <p class="sub"> and I'm lucky to be here for 8 of them… hehe</p>
+    </div>
+    <div class="scroll-hint" id="scrollHint">scroll<span>&#8595;</span></div>
+    <div class="veil" id="veil"></div>
+  </div>
+</div>
+
+<!-- ============ 3D FIELD (explore to find the letter) ============ -->
+<section class="game" id="game">
+  <canvas id="game-canvas"></canvas>
+  <div class="game-top-veil"></div>
+
+  <div class="game-hint" id="gameHint">
+    <span class="ctl ctl-keys">arrow keys / WASD to walk Tommy</span>
+    <span class="ctl ctl-touch">drag the circle to walk Tommy</span>
+    <span class="muted">follow the light!</span>
+  </div>
+
+  <div class="joystick" id="joystick"><div class="knob" id="knob"></div></div>
+
+  <div class="game-banner" id="gameBanner">you found something &#128150;</div>
+
+  <div class="game-fallback" id="gameFallback">
+    <p>This device couldn't load the little field... but my message for you is still here.</p>
+    <button id="fallbackBtn">Open letter</button>
+  </div>
+</section>
+
+<!-- ============ MODAL (letter) ============ -->
+<div class="modal" id="modal">
+  <div class="card letter">
+    <button class="close" id="closeBtn" aria-label="close">&times;</button>
+
+    <!-- GREETING: the word "Hello," + HER handwritten-name image -->
+    <p class="letter-greeting">
+      Hello,
+      <img class="signature signature--her" src="name-her.png">
+    </p>
+
+    <div class="letter-body" id="cardMessage">
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+      <p>MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA MWA</p>
+    </div>
+    <!-- ============================================================= -->
+
+    <!-- CLOSING: the word "Yours," + YOUR handwritten-name image -->
+    <p class="letter-closing">
+      <span>Yours,</span>
+      <img class="signature signature--mine" src="name-mine.png">
+    </p>
+  </div>
+</div>
+
+<!-- Three.js (3D library) then the site script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
