@@ -4,11 +4,11 @@
   /* =================================================================== */
   var GAME = {
     walkSpeed:   11,             // how fast Tommy moves
-    fieldHalf:   42,             // half-size of the field 
-    giftPos:     {x:-30, z:-26}, // gift location
+    fieldHalf:   42,             // half-size of the field (bigger = more to roam)
+    giftPos:     {x:-30, z:-26}, // where the glowing gift hides
     findRadius:  5,              // how close Tommy must get to open the letter
-    tommyScale:  0.8,            // Tommy's size 
-    giftScale:   1.8             // gift size
+    tommyScale:  0.8,            // Tommy's size (smaller number = smaller Tommy)
+    giftScale:   1.8             // the gift's size
   };
   /* =================================================================== */
 
@@ -104,15 +104,16 @@
   function initGame(){
     var canvas=document.getElementById('game-canvas');
     var renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, isTouch?1.5:2));
 
     var scene=new THREE.Scene();
+    // cool, cheerful sky so the warm/rose gift light stands out
     var sky=document.createElement('canvas'); sky.width=4; sky.height=256;
     var sctx=sky.getContext('2d'); var grd=sctx.createLinearGradient(0,0,0,256);
-    grd.addColorStop(0,'#a9d8ea'); grd.addColorStop(0.55,'#cfe8e0'); grd.addColorStop(1,'#ffe0c2');
+    grd.addColorStop(0,'#7fbfe8'); grd.addColorStop(0.55,'#bfe3e8'); grd.addColorStop(1,'#e9f1df');
     sctx.fillStyle=grd; sctx.fillRect(0,0,4,256);
     scene.background=new THREE.CanvasTexture(sky);
-    scene.fog=new THREE.Fog(0xe9ddc8, 55, 125);
+    scene.fog=new THREE.Fog(0xdfeede, 55, 125);
 
     var camera=new THREE.PerspectiveCamera(50,1,0.1,400);
     function sizeR(){ var w=canvas.clientWidth||window.innerWidth, h=canvas.clientHeight||window.innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
@@ -125,8 +126,8 @@
 
     var m=new THREE.Matrix4(), q=new THREE.Quaternion(), v=new THREE.Vector3(), s=new THREE.Vector3(1,1,1);
 
-    // ---- ground: alternating blocky grass tiles ----
-    var GN=Math.ceil(GAME.fieldHalf), TILE=2;
+    // ---- ground: alternating blocky grass tiles (sized to the field) ----
+    var TILE=2, GN=Math.ceil(GAME.fieldHalf/TILE);
     var tileGeo=new THREE.BoxGeometry(TILE,1,TILE);
     var nTiles=(GN*2)*(GN*2);
     var imL=new THREE.InstancedMesh(tileGeo,new THREE.MeshLambertMaterial({color:0x84c95a}),nTiles);
@@ -139,7 +140,7 @@
     imL.count=ci; imD.count=di; imL.instanceMatrix.needsUpdate=true; imD.instanceMatrix.needsUpdate=true;
     scene.add(imL,imD);
 
-    // ---- grass tufts (denser) ----
+    // ---- grass tufts ----
     var NT=520, tufts=new THREE.InstancedMesh(new THREE.BoxGeometry(0.22,0.9,0.22), new THREE.MeshLambertMaterial({color:0x5fa83f}), NT);
     for(var t=0;t<NT;t++){
       var ex=GAME.fieldHalf-2;
@@ -149,7 +150,7 @@
     }
     q.identity(); s.set(1,1,1); tufts.instanceMatrix.needsUpdate=true; scene.add(tufts);
 
-    // ---- peonies (denser): stem + two pink layers + golden center ----
+    // ---- peonies: stem + two pink layers + golden center ----
     var NF=150, ex2=GAME.fieldHalf-3, fpos=[];
     for(var fi=0;fi<NF;fi++){ fpos.push({x:(Math.random()*2-1)*ex2, z:(Math.random()*2-1)*ex2, sc:0.8+Math.random()*0.6}); }
     function instAt(geo,mat,n,yBase){
@@ -162,7 +163,7 @@
     instAt(new THREE.BoxGeometry(0.7,0.4,0.7),  new THREE.MeshLambertMaterial({color:0xffa8c4}), NF, 1.9);
     instAt(new THREE.BoxGeometry(0.3,0.3,0.3),  new THREE.MeshLambertMaterial({color:0xffd76a}), NF, 2.15);
 
-    // ---- trees (more, scattered) ----
+    // ---- trees ----
     function tree(x,z){ var g=new THREE.Group();
       var tr=box(1.1,3.2,1.1,0x8a5a32); tr.position.y=1.6; g.add(tr);
       var c1=box(3.2,2.4,3.2,0x57a24a); c1.position.y=4.0; g.add(c1);
@@ -171,10 +172,10 @@
     }
     var placed=0,tries=0;
     while(placed<13 && tries<300){ tries++;
-      var tx=(Math.random()*2-1)*(GAME.fieldHalf-3), tz=(Math.random()*2-1)*(GAME.fieldHalf-3);
-      if(Math.abs(tx)<6 && tz>0) continue;                 // keep spawn lane clear
-      if(Math.hypot(tx-GAME.giftPos.x,tz-GAME.giftPos.z)<7) continue;  // not on the gift
-      tree(tx,tz); placed++;
+      var tx2=(Math.random()*2-1)*(GAME.fieldHalf-3), tz2=(Math.random()*2-1)*(GAME.fieldHalf-3);
+      if(Math.abs(tx2)<6 && tz2>0) continue;
+      if(Math.hypot(tx2-GAME.giftPos.x,tz2-GAME.giftPos.z)<7) continue;
+      tree(tx2,tz2); placed++;
     }
 
     // ---- pond + little fence ----
@@ -198,7 +199,7 @@
 
     // ---- the glowing gift (bigger + always luminous) + beam + ground halo ----
     var gift=new THREE.Group();
-    var giftBox=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), new THREE.MeshLambertMaterial({color:0xff8fb0, emissive:0xff4d80, emissiveIntensity:0.75}));
+    var giftBox=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), new THREE.MeshLambertMaterial({color:0xff8fb0, emissive:0xff4d80, emissiveIntensity:0.8}));
     giftBox.position.y=0.8; gift.add(giftBox);
     var ribMat=new THREE.MeshLambertMaterial({color:0xfff0a0, emissive:0xffcf55, emissiveIntensity:0.6});
     var r1=new THREE.Mesh(new THREE.BoxGeometry(0.32,1.7,1.7),ribMat); r1.position.y=0.8; gift.add(r1);
@@ -243,7 +244,12 @@
     tommy.scale.setScalar(GAME.tommyScale);
     tommy.position.set(0,0,12); tommy.rotation.y=Math.PI; scene.add(tommy);
 
-    // ---- controls ----
+    /* ---------- CAMERA (orbit + zoom) ---------- */
+    var CAM_DIST=17, CAM_HEIGHT=13, ZMIN=0.55, ZMAX=2.4;
+    var camYaw=0, zoom=1;
+    camera.position.set(0, CAM_HEIGHT, 12+CAM_DIST); camera.lookAt(0,1.8,12);
+
+    // ---- walking controls (joystick) ----
     var keys={};
     window.addEventListener('keydown',function(e){ keys[e.key.toLowerCase()]=true; if(['arrowup','arrowdown','arrowleft','arrowright'].indexOf(e.key.toLowerCase())>=0 && visible) e.preventDefault(); },{passive:false});
     window.addEventListener('keyup',function(e){ keys[e.key.toLowerCase()]=false; });
@@ -258,6 +264,30 @@
     joy.addEventListener('pointermove',joyMove);
     joy.addEventListener('pointerup',joyEnd);
     joy.addEventListener('pointercancel',joyEnd);
+
+    // ---- look-around (drag) + zoom (pinch) on the field ----
+    var ptrs={}, pinchPrev=null;
+    canvas.addEventListener('pointerdown',function(e){ ptrs[e.pointerId]={x:e.clientX,y:e.clientY}; });
+    canvas.addEventListener('pointermove',function(e){
+      if(!(e.pointerId in ptrs)) return;
+      var ids=Object.keys(ptrs);
+      if(ids.length>=2){                       // two fingers -> pinch zoom
+        ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
+        var a=ptrs[ids[0]], b=ptrs[ids[1]];
+        var dist=Math.hypot(a.x-b.x,a.y-b.y);
+        if(pinchPrev!==null && dist>0){ zoom*=pinchPrev/dist; zoom=Math.max(ZMIN,Math.min(ZMAX,zoom)); }
+        pinchPrev=dist;
+      } else {                                  // one finger -> orbit
+        var pp=ptrs[e.pointerId];
+        camYaw -= (e.clientX-pp.x)*0.005;
+        ptrs[e.pointerId]={x:e.clientX,y:e.clientY};
+        pinchPrev=null;
+      }
+    });
+    function endPtr(e){ delete ptrs[e.pointerId]; if(Object.keys(ptrs).length<2) pinchPrev=null; }
+    canvas.addEventListener('pointerup',endPtr);
+    canvas.addEventListener('pointercancel',endPtr);
+    canvas.addEventListener('pointerleave',endPtr);
 
     var hint=document.getElementById('gameHint');
     setTimeout(function(){ hint.classList.add('fade'); }, 7000);
@@ -286,6 +316,7 @@
       requestAnimationFrame(loop);
       if(!visible){ return; }
 
+      // raw input
       var mx=0, mz=0;
       if(joyActive && (Math.abs(joyX)>0.08 || Math.abs(joyY)>0.08)){ mx=joyX; mz=joyY; }
       else {
@@ -295,15 +326,21 @@
         if(keys['arrowright']||keys['d']) mx+=1;
       }
       var len=Math.hypot(mx,mz); if(len>1){ mx/=len; mz/=len; }
-      var moving=(mx*mx+mz*mz)>0.01;
+
+      // make input camera-relative: "up" walks away from the camera
+      var fdx=-Math.sin(camYaw), fdz=-Math.cos(camYaw);   // forward (into the screen)
+      var rdx=-fdz, rdz=fdx;                              // right
+      var wmX=rdx*mx + fdx*(-mz);
+      var wmZ=rdz*mx + fdz*(-mz);
+      var moving=(wmX*wmX+wmZ*wmZ)>0.01;
 
       if(moving){
-        tommy.position.x+=mx*GAME.walkSpeed*dt;
-        tommy.position.z+=mz*GAME.walkSpeed*dt;
-        var b=GAME.fieldHalf-1.5;
-        tommy.position.x=Math.max(-b,Math.min(b,tommy.position.x));
-        tommy.position.z=Math.max(-b,Math.min(b,tommy.position.z));
-        tommy.rotation.y=lerpAngle(tommy.rotation.y, Math.atan2(mx,mz), 0.2);
+        tommy.position.x+=wmX*GAME.walkSpeed*dt;
+        tommy.position.z+=wmZ*GAME.walkSpeed*dt;
+        var bnd=GAME.fieldHalf-1.5;
+        tommy.position.x=Math.max(-bnd,Math.min(bnd,tommy.position.x));
+        tommy.position.z=Math.max(-bnd,Math.min(bnd,tommy.position.z));
+        tommy.rotation.y=lerpAngle(tommy.rotation.y, Math.atan2(wmX,wmZ), 0.2);
         walk+=dt*11;
         legs[0].rotation.x=Math.sin(walk)*0.5; legs[3].rotation.x=Math.sin(walk)*0.5;
         legs[1].rotation.x=-Math.sin(walk)*0.5; legs[2].rotation.x=-Math.sin(walk)*0.5;
@@ -313,10 +350,14 @@
         rig.position.y += (0 - rig.position.y)*0.1;
       }
 
+      // camera orbits + zooms around Tommy
       var tx=tommy.position.x, tz=tommy.position.z;
-      camera.position.x += (tx - camera.position.x)*0.09;
-      camera.position.z += (tz+17 - camera.position.z)*0.09;
-      camera.position.y += (13 - camera.position.y)*0.09;
+      var desX=tx + Math.sin(camYaw)*CAM_DIST*zoom;
+      var desZ=tz + Math.cos(camYaw)*CAM_DIST*zoom;
+      var desY=Math.max(4, CAM_HEIGHT*zoom);
+      camera.position.x += (desX-camera.position.x)*0.12;
+      camera.position.y += (desY-camera.position.y)*0.12;
+      camera.position.z += (desZ-camera.position.z)*0.12;
       camera.lookAt(tx, 1.8, tz);
 
       // gift glow: bob, spin, orbiting dots, pulsing halo (always on)
@@ -325,7 +366,7 @@
       orbitGroup.rotation.y+=dt*1.6;
       for(var dd2=0; dd2<dots.length; dd2++){ dots[dd2].position.y=1.5+Math.sin(now*0.004+dots[dd2].userData.ph)*0.4; }
       haloT+=dt; var hp=Math.sin(haloT*2.4)*0.5+0.5;
-      halo.material.opacity=0.25+hp*0.35; halo.scale.setScalar(1+hp*0.18);
+      halo.material.opacity=0.3+hp*0.4; halo.scale.setScalar(1+hp*0.18);
 
       // trigger / re-arm
       var gdx=tx-gift.position.x, gdz=tz-gift.position.z, gd2=gdx*gdx+gdz*gdz;
@@ -345,7 +386,11 @@
     }
 
     sizeR();
+    requestAnimationFrame(sizeR);                 // re-measure once layout settles
+    setTimeout(sizeR, 350);                        // re-measure after mobile browser bars settle
     window.addEventListener('resize',sizeR);
+    window.addEventListener('orientationchange',function(){ setTimeout(sizeR,200); });
+    if('ResizeObserver' in window){ new ResizeObserver(sizeR).observe(canvas); }
     requestAnimationFrame(loop);
   }
 })();
