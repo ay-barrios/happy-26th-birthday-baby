@@ -27,7 +27,7 @@
   </div>
 </div>
 
-<!-- ============ 3D FIELD (explore to find the letter) ============ -->
+<!-- =============== 3D FIELD =============== -->
 <section class="game" id="game">
   <canvas id="game-canvas"></canvas>
   <div class="game-top-veil"></div>
@@ -53,7 +53,6 @@
   <div class="card letter">
     <button class="close" id="closeBtn" aria-label="close">&times;</button>
 
-    <!-- GREETING: the word "Hello," + HER handwritten-name image -->
     <p class="letter-greeting">
       Hello,
       <img class="signature signature--her" src="name-her.png">
@@ -78,7 +77,6 @@
     </div>
     <!-- ============================================================= -->
 
-    <!-- CLOSING: the word "Yours," + YOUR handwritten-name image -->
     <p class="letter-closing">
       <span>Yours,</span>
       <img class="signature signature--mine" src="name-mine.png">
@@ -88,6 +86,57 @@
 
 <!-- Three.js (3D library) then the site script -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- 8-bit Happy Birthday  -->
+<script>
+  (function(){
+    var N={C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,
+          C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99};
+    // melody: [frequency Hz (0 = rest), beats]
+    var SONG=[
+      [N.G4,.5],[N.G4,.5],[N.A4,1],[N.G4,1],[N.C5,1],[N.B4,2],
+      [N.G4,.5],[N.G4,.5],[N.A4,1],[N.G4,1],[N.D5,1],[N.C5,2],
+      [N.G4,.5],[N.G4,.5],[N.G5,1],[N.E5,1],[N.C5,1],[N.B4,1],[N.A4,2],
+      [N.F5,.5],[N.F5,.5],[N.E5,1],[N.C5,1],[N.D5,1],[N.C5,2],
+      [0,1.5]
+    ];
+    var BEAT=0.42;   // seconds per beat (lower = faster)
+    var VOL=0.09;    // volume 0–1 (keep gentle)
+    var ctx, master, playing=false;
+
+    function build(){
+      var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return false;
+      ctx=new AC(); master=ctx.createGain(); master.gain.value=VOL; master.connect(ctx.destination);
+      return true;
+    }
+    function playOnce(start){
+      var t=start;
+      for(var i=0;i<SONG.length;i++){
+        var f=SONG[i][0], dur=SONG[i][1]*BEAT;
+        if(f>0){
+          var o=ctx.createOscillator(); o.type='square'; o.frequency.value=f;
+          var g=ctx.createGain();
+          g.gain.setValueAtTime(0.0001,t);
+          g.gain.exponentialRampToValueAtTime(0.9,t+0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.92);
+          o.connect(g); g.connect(master); o.start(t); o.stop(t+dur);
+        }
+        t+=dur;
+      }
+      return t-start;
+    }
+    function loop(){ if(!playing) return; var total=playOnce(ctx.currentTime+0.05); setTimeout(loop,(total+0.5)*1000); }
+    function startLoop(){ if(playing||!ctx||ctx.state!=='running') return; playing=true; loop(); }
+    function tryStart(){
+      if(!ctx && !build()) return;
+      if(ctx.state==='suspended'){ ctx.resume().then(startLoop).catch(function(){}); }
+      else startLoop();
+    }
+    tryStart(); // attempt on load (usually waits for the rule below)
+    ['pointerdown','keydown','touchstart','click','scroll'].forEach(function(ev){
+      window.addEventListener(ev, tryStart, {passive:true});
+    });
+  })();
+</script>
 <script src="script.js"></script>
 </body>
 </html>
